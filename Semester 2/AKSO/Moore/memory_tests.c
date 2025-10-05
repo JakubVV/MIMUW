@@ -11,11 +11,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-// Ten plik musi kompilowany z opcjami -std=gnu17 i -fPIC,
-// a linkowany z opcjami -Wl,--wrap=malloc -Wl,--wrap=calloc -Wl,--wrap=realloc
+// This file must be compiled with options: -std=gnu17 and -fPIC,
+// linked with options: -Wl,--wrap=malloc -Wl,--wrap=calloc -Wl,--wrap=realloc
 // -Wl,--wrap=reallocarray -Wl,--wrap=free -Wl,--wrap=strdup -Wl,--wrap=strndup.
 
-// Przechwytujemy funkcje alokujące i zwalniające pamięć.
 void * __real_malloc(size_t size) __attribute__((weak));
 void * __real_calloc(size_t nmemb, size_t size) __attribute__((weak));
 void * __real_realloc(void *ptr, size_t size) __attribute__((weak));
@@ -24,20 +23,16 @@ char * __real_strdup(const char *s) __attribute__((weak));
 char * __real_strndup(const char *s, size_t size) __attribute__((weak));
 void   __real_free(void *ptr) __attribute__((weak));
 
-// Trzymamy globalnie informacje o alokacjach i zwolnieniach pamięci.
 static memory_test_data_t test_data;
 
-// To jest prosty akcesor potrzebny do testowania.
 memory_test_data_t * get_memory_test_data(void) {
   return &test_data;
 }
 
-// W zadanym momencie alokacja pamięci zawodzi.
 static bool should_fail(void) {
   return ++test_data.call_counter == test_data.fail_counter;
 }
 
-// Realokacja musi się udać, jeśli nie zwiększamy rozmiaru alokowanej pamięci.
 static bool can_fail(void const *old_ptr, size_t new_size) {
   if (old_ptr == NULL)
     return true;
@@ -45,7 +40,7 @@ static bool can_fail(void const *old_ptr, size_t new_size) {
     return new_size > malloc_usable_size((void *)old_ptr);
 }
 
-// Symulujemy brak pamięci.
+// Simulate a lack of memory.
 #define UNRELIABLE_ALLOC(ptr, size, fun, name)                           \
   do {                                                                   \
     test_data.call_total++;                                              \
@@ -90,7 +85,6 @@ char *__wrap_strndup(const char *s, size_t size) {
   UNRELIABLE_ALLOC(NULL, 0, __real_strndup(s, size), "strndup");
 }
 
-// Zwalnianie pamięci zawsze się udaje. Odnotowujemy jedynie fakt zwolnienia.
 void __wrap_free(void *ptr) {
   test_data.call_total++;
   __real_free(ptr);
