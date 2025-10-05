@@ -8,7 +8,7 @@
 static bool isset(int a, int b, int c) { 
     const int d = 10;                    
     if (a == 0 || b == 0 || c == 0)
-    return false;
+    	return false;
     for (int i = 0; i < L; i++) {
         int x = a % d;
         int y = b % d;
