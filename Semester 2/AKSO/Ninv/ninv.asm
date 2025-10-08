@@ -289,7 +289,6 @@ normalize_divisor:
     jmp .shift_loop
 .shift_done:
 .save_results:
-    ; Zapisz wyniki
     mov rax, [rsp+32]       ; rax = t_out
     mov [rax], rbx          ; *t_out = t
     mov rax, [rsp+40]       ; rax = s_out
@@ -297,7 +296,6 @@ normalize_divisor:
     mov rax, r13            
     jmp .normalize_done
 .malloc_failed:
-    ; Zwolnij pamięć x32_ptr i y32_ptr
     mov rax, [rsp+16]       ; rax = x32_ptr
     mov rdi, [rax]          ; rdi = *x32_ptr
     call free wrt ..plt
