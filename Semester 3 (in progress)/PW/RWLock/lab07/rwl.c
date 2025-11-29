@@ -17,9 +17,9 @@ struct ReadWriteLock {
 };
 
 void read_write_lock_init(struct ReadWriteLock* rw) {
-    pthread_mutex_init(&rw->mutex, NULL);
-    pthread_cond_init(&rw->readers, NULL);
-    pthread_cond_init(&rw->writers, NULL);
+    ASSERT_ZERO(pthread_mutex_init(&rw->mutex, NULL));
+    ASSERT_ZERO(pthread_cond_init(&rw->readers, NULL));
+    ASSERT_ZERO(pthread_cond_init(&rw->writers, NULL));
     rw->n_reading = 0;
     rw->n_writing = 0;
     rw->n_readers_waiting = 0;
@@ -28,18 +28,18 @@ void read_write_lock_init(struct ReadWriteLock* rw) {
 }
 
 void read_write_lock_destroy(struct ReadWriteLock* rw) {
-    pthread_mutex_destroy(&rw->mutex);
-    pthread_cond_destroy(&rw->readers);
-    pthread_cond_destroy(&rw->writers);
+    ASSERT_ZERO(pthread_mutex_destroy(&rw->mutex));
+    ASSERT_ZERO(pthread_cond_destroy(&rw->readers));
+    ASSERT_ZERO(pthread_cond_destroy(&rw->writers));
 }
 
 void before_read(struct ReadWriteLock* rw) {
     pthread_mutex_lock(&rw->mutex);
     rw->n_readers_waiting++;
-    if (rw->n_writing || rw->n_writers_waiting > 0) {
+    if (rw->n_writing || rw->n_writers_waiting > 0 || rw->signalling) {
         do {
-            rw->signalling = false;
             pthread_cond_wait(&rw->readers, &rw->mutex);
+            rw->signalling = false;
         }  while (rw->n_writing);
     }
     rw->n_readers_waiting--;
@@ -60,9 +60,9 @@ void after_read(struct ReadWriteLock* rw) {
 void before_write(struct ReadWriteLock* rw) {
     pthread_mutex_lock(&rw->mutex);
     rw->n_writers_waiting++;
-    while (rw->n_reading > 0 || rw->n_writing > 0) {
+    while (rw->n_reading > 0 || rw->n_writing > 0 || rw->signalling) {
+        pthread_cond_wait(&rw->writers, &rw->mutex);
         rw->signalling = false;
-    pthread_cond_wait(&rw->writers, &rw->mutex);
     }
     rw->n_writers_waiting--;
     rw->n_writing++;
